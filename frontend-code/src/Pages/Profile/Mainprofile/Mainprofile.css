@@ -1,0 +1,224 @@
+.arrow-icon {
+    margin: 10px;
+    cursor: pointer;
+  }
+
+  .arrow-icon:hover {
+    color: var(--twitter-color);
+  }
+
+  .coverImage {
+    height: 200px;
+    width: 600px;
+  }
+
+
+
+  .coverImageContainer {
+    position: relative;
+    height: 0px;
+
+  }
+
+  .coverImageContainer > img{
+    height: 100px;
+  }
+
+  
+
+
+
+
+  .photoIcon {
+    position: absolute;
+    opacity: 1;
+    top: 30px;
+    left: 30px;
+    color: rgb(215, 212, 212);
+    font-size: 35px !important;
+    opacity: 40%;
+    cursor: pointer;
+    z-index: 1;
+  }
+
+  .photoIcon2{
+    position: absolute;
+    top: 30px;
+    left: 270px;
+    color:  rgb(215, 212, 212);
+    opacity: 0.5;
+
+  }
+
+
+
+  .photoIcon2, .photoIcon:hover {
+    opacity: 100%;
+  }
+
+  .photoIconDisabled {
+    cursor: not-allowed;
+  }
+
+  .userInfo {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+  }
+
+  .userInfo > div{
+        height: 100px;
+  }
+
+  .heading-4 {
+    margin-top: -40px;
+    font-size: 19px;
+    margin-left: 50px;
+    margin-bottom: 10px;
+    justify-content: space-between;
+  }
+
+  .heading-3 {
+    margin-left: 20px;
+    font-size: 24px;
+  }
+
+  .usernameSection {
+    margin-left: 20px;
+    color: rgb(116, 116, 116);
+  }
+
+  .mainprofile {
+    background-color: rgb(207, 206, 206);
+    margin-top: 0;
+    border: 1 px solid white;
+  }
+
+  .profile-bio {
+    height: 100px;
+  }
+
+  .avatarContainer {
+    margin-top: 40px;
+    margin-left: 20px;
+    border-radius: 100%;
+    position: relative;
+    height: 100px;
+    width: 100px;
+    border: 4px solid white;
+  }
+
+  .avatar {
+    position: relative!important;
+    width: 100%!important;
+    height: 100%!important;
+    border-radius: 100%!important;
+    object-fit: cover!important;
+  }
+
+
+  .hoverAvatarImage {
+    position: absolute;
+    top: 0%;
+    background-color: rgba(0, 0, 0, 0.603);
+    width: 100%;
+    height: 98%;
+    border-radius: 100%;
+    opacity: 0%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+  }
+
+  .hoverAvatarImage:hover {
+    opacity: 100%;
+  }
+
+  .Edit-profile-btn {
+    background-color: white;
+    padding: 10px;
+    border: 1px solid;
+    border-radius: 2rem;
+    margin-right: 20px;
+  }
+
+  .Edit-profile-btn:hover {
+    background-color: rgb(207, 206, 206);
+  }
+
+  .Tweet {
+    background-color: white;
+    width: 20%;
+    height: 20%;
+    padding: 2rem 1rem;
+    color: skyblue;
+  }
+
+  .tweetsText {
+    margin-top: 20px;
+    margin-left: 20px;
+    margin-bottom: 5px;
+  }
+
+  .infoContainer {
+    margin-left: 20px;
+    margin-top: 5px;
+    gap: 5px;
+  }
+
+  .locationAndLink {
+    display: flex;
+    align-items: center;
+    gap: 50px;
+    margin-top: 5px;
+  }
+
+  .loc{
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    justify-content: center;
+  }
+  .subInfo {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 5px;
+  }
+
+  .link {
+    color: var(--twitter-color);
+    cursor: pointer;
+  }
+
+
+
+  .post-container {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    padding: 5px;
+    overflow-y: scroll;
+    max-height: 1000px;
+    overflow-y: auto;
+    background-color:rgb(230, 236, 240);
+    
+  }
+  
+  .post-container::-webkit-scrollbar {
+    width: 0px;  /* Remove the scrollbar width */
+    height: 0px; /* Remove the horizontal scrollbar */
+  }
+  
+  /* Optional: Hide the thumb as well */
+  .post-container::-webkit-scrollbar-thumb {
+    background: transparent; /* Hide thumb */
+  }
+  
+  .post {
+    background-color: white;
+    padding: 10px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+  }
+  
