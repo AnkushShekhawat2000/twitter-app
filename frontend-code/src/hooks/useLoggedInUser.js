@@ -1,24 +1,48 @@
 import { useEffect, useState } from "react";
-import { useUserauth } from "../context/UserAuthContext";
+import { authFetch } from "../utils/authfetch.js";
 
 const useLoggedInUser = () => {
-  const { user } = useUserauth();
-  const email = user?.email;
-
-  const [loggedInUser, setLoggedInUser] = useState({});
+  const [loggedInUser, setLoggedInUser] = useState(null);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    if (!email) return;
+    let cancelled = false;
 
-    fetch(`${process.env.REACT_APP_BASE_URL}/auth/loggedInUser?email=${email}`)
-      .then((res) => res.json())
-      .then((data) => {
-        setLoggedInUser(data);
-      })
-      .catch((err) => console.log(err));
-  }, [email]);
+    const fetchLoggedInUser = async () => {
+      try {
+        setLoading(true);
 
-  return [loggedInUser, setLoggedInUser];
+        const response = await authFetch("/auth/loggedInUser");
+
+        if (!response.ok) {
+          throw new Error("Failed to fetch logged-in user");
+        }
+
+        const data = await response.json();
+
+        if (!cancelled) {
+          setLoggedInUser(data.user);
+        }
+      } catch (error) {
+        if (!cancelled) {
+          console.error("Logged-in user error:", error);
+          setLoggedInUser(null);
+        }
+      } finally {
+        if (!cancelled) {
+          setLoading(false);
+        }
+      }
+    };
+
+    fetchLoggedInUser();
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  return [loggedInUser, setLoggedInUser, loading];
 };
 
 export default useLoggedInUser;

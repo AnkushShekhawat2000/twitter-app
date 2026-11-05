@@ -1,113 +1,131 @@
-import { useState } from "react";
+
 import { Avatar, Button } from "@mui/material";
 import AddPhotoAlternateOutlinedIcon from "@mui/icons-material/AddPhotoAlternateOutlined";
 import axios from "axios";
 import "./TweetBox.css";
+
 import { useUserauth } from "../../../context/UserAuthContext";
 import { useLoggedInUser } from "../../../context/LoggedInUserContex";
 import { useNavigate } from "react-router-dom";
-// import useLoggedInUser from "../../../hooks/useLoggedInUser";
 
+import { useState } from "react";
+import { toast } from "react-toastify";
 
 const TweetBox = ({ fetchPost }) => {
   const navigate = useNavigate();
+
   const [post, setPost] = useState("");
   const [imageURL, setImageURL] = useState("");
-  const [isLoading, setIsLoading] = useState("");
-  const { user } = useUserauth();
-  // const [loggedInUser] = useLoggedInUser();
+  const [isLoading, setIsLoading] = useState(false);
+  const [isPosting, setIsPosting] = useState(false);
+
+  const { user, token } = useUserauth();
+
+  console.log(token,"-----,,,,")
   const { loggedInUser } = useLoggedInUser();
-  const email = user?.email;
-  const userId = loggedInUser?._id;
-  const userProfilepic = loggedInUser?.profilePhoto
-    ? loggedInUser.profilePhoto
-    : user && user.photoURL;
 
+  const API_URL = process.env.REACT_APP_BASE_URL;
 
+  const handleUploadImage = async (e) => {
+    const image = e.target.files?.[0];
 
+    if (!image) return;
 
-  function handleUploadImage(e) {
-       if (!loggedInUser) {
-
+    if (!token || !loggedInUser) {
       navigate("/login");
-
       return;
-   }
+    }
+
+    if (!image.type.startsWith("image/")) {
+      toast.error("Please select a valid image.");
+      e.target.value = "";
+      return;
+    }
 
     setIsLoading(true);
-    const image = e.target.files[0];
-    const formData = new FormData();
-    formData.set("image", image);
-    axios
-      .post(
-        `https://api.imgbb.com/1/upload?key=22741e46a20f61109c000473abeaac5b`,
-        formData,
-      )
-      .then((res) => {
-        setImageURL(res.data.data.display_url);
-        console.log(res.data.data.display_url);
-        setIsLoading(false);
-      })
-      .catch((err) => {
-        console.log(err);
-        setIsLoading(false);
-      });
-  }
 
+    try {
+      const formData = new FormData();
+      formData.append("image", image);
+
+      const response = await axios.post(
+        "https://api.imgbb.com/1/upload?key=22741e46a20f61109c000473abeaac5b",
+        formData
+      );
+
+      const uploadedURL = response.data?.data?.display_url;
+
+      if (!uploadedURL) {
+        throw new Error("Image upload failed.");
+      }
+
+      setImageURL(uploadedURL);
+      toast.success("Image uploaded successfully!");
+    } catch (error) {
+      console.error("Image upload error:", error);
+      toast.error(
+        error.response?.data?.error?.message ||
+          error.message ||
+          "Unable to upload image."
+      );
+    } finally {
+      setIsLoading(false);
+      e.target.value = "";
+    }
+  };
 
   const handleTweet = async (e) => {
     e.preventDefault();
 
-     if (!loggedInUser) {
-
+    if (!token || !loggedInUser) {
       navigate("/login");
-
       return;
-   }
-
-    let finalName;
-    let finalUsername;
-
-    if (user?.providerData[0]?.providerId === "password") {
-      const res = await fetch(
-        `${process.env.REACT_APP_BASE_URL}/auth/loggedInUser?email=${email}`,
-      );
-      const data = await res.json();
-
-      finalName = data.name;
-      finalUsername = data.username;
-    } else {
-      finalName = user?.displayName;
-      finalUsername = email.split("@")[0];
     }
 
-    const userPost = {
-      profilePhoto: userProfilepic,
-      postBody: post,
-      postImage: imageURL,
-      username: finalUsername,
-      name: finalName,
-      email: email,
-      userId
-    };
+    if (!post.trim() && !imageURL) {
+      toast.error("Please write something or upload an image.");
+      return;
+    }
 
-    const res = await fetch(
-      `${process.env.REACT_APP_BASE_URL}/post/create-post`,
-      {
+    if (isLoading || isPosting) {
+      return;
+    }
+
+    setIsPosting(true);
+
+    try {
+      const response = await fetch(`${API_URL}/post/create-post`, {
         method: "POST",
-        headers: { "content-type": "application/json" },
-        body: JSON.stringify(userPost),
-      },
-    );
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: "Bearer " + localStorage.getItem("token"),
+        },
+        body: JSON.stringify({
+          postBody: post.trim(),
+          postImage: imageURL || null,
+        }),
+      });
 
-    const data = await res.json();
+      const data = await response.json().catch(() => ({}));
 
-    console.log("Post created", data);
+      if (!response.ok) {
+        throw new Error(data.message || "Failed to create post.");
+      }
 
-    fetchPost();
+      setPost("");
+      setImageURL("");
 
-    setPost("");
-    setImageURL("");
+      toast.success(data.message || "Tweet posted successfully!");
+
+      if (fetchPost) {
+        await fetchPost();
+      }
+    } catch (error) {
+      console.error("Create post error:", error);
+      toast.error(error.message || "Something went wrong.");
+    } finally {
+      setIsPosting(false);
+    }
   };
 
   return (
@@ -116,54 +134,59 @@ const TweetBox = ({ fetchPost }) => {
         <div className="tweetBox-input">
           <Avatar
             src={
-              loggedInUser?.profilePhoto
-                ? loggedInUser.profilePhoto
-                : user && user.photoURL
+              loggedInUser?.profilePhoto ||
+              user?.photoURL ||
+              ""
             }
           />
+
           <input
             type="text"
             placeholder="What's happening?"
             onChange={(e) => setPost(e.target.value)}
             value={post}
-            required
-            //  disabled={!loggedInUser}
-  onClick={() => {
-    if (!loggedInUser) {
-      navigate("/login");
-    }
-  }}
+            required={!imageURL}
+            disabled={isPosting}
+            onClick={() => {
+              if (!token || !loggedInUser) {
+                navigate("/login");
+              }
+            }}
           />
         </div>
+
         <div className="imageIcon-tweetButton">
           <label htmlFor="image" className="imageIcon">
             {isLoading ? (
-              <p>Uploading Image</p>
+              <p>Uploading Image...</p>
+            ) : imageURL ? (
+              <p>Image uploaded</p>
             ) : (
-              <p>
-                {imageURL ? (
-                  "image uploaded"
-                ) : (
-                  <AddPhotoAlternateOutlinedIcon />
-                )}
-              </p>
+              <AddPhotoAlternateOutlinedIcon />
             )}
           </label>
+
           <input
             type="file"
             id="image"
             className="imageInput"
+            accept="image/*"
             onChange={handleUploadImage}
-            disabled={!loggedInUser}
-            onClick={() => {
-            if (!loggedInUser) {
-              navigate("/login");
-              return;
-            }
-          }}
+            disabled={isLoading || isPosting || !token}
+            onClick={(e) => {
+              if (!token || !loggedInUser) {
+                e.preventDefault();
+                navigate("/login");
+              }
+            }}
           />
-          <Button className="tweetBox-tweetButton" type="submit" >
-            Tweet
+
+          <Button
+            className="tweetBox-tweetButton"
+            type="submit"
+            disabled={isPosting || isLoading}
+          >
+            {isPosting ? "Posting..." : "Tweet"}
           </Button>
         </div>
       </form>

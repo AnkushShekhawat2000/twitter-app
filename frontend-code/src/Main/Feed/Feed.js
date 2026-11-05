@@ -1,375 +1,340 @@
+import {
+  useState,
+  useEffect,
+  useRef,
+  useCallback,
+} from "react";
 
-import React, { useState, useEffect, useRef, useCallback } from "react";
 import TweetBox from "./TweetBox/TweetBox.js";
 import Post from "./Posts/Posts.js";
-import "./feed.css";
-import { useLoggedInUser } from "../../context/LoggedInUserContex.js";
-import { Navigate } from "react-router-dom";
-// import useLoggedInUser from "../../hooks/useLoggedInUser.js";
 
+import "./feed.css";
+
+import { useNavigate } from "react-router-dom";
+import { toast } from "react-toastify";
+
+import { useUserauth } from "../../context/UserAuthContext.js";
+import { useLoggedInUser } from "../../context/LoggedInUserContex.js";
+
+const API_URL = process.env.REACT_APP_BASE_URL;
 const LIMIT = 5;
 
 const Feed = () => {
 
+
   const [posts, setPosts] = useState([]);
   const [page, setPage] = useState(1);
-
   const [loading, setLoading] = useState(false);
-
   const [hasMore, setHasMore] = useState(true);
 
-  // const [loggedInUser] = useLoggedInUser();
+  const navigate = useNavigate();
+
+ 
+  const { token } = useUserauth();
   const { loggedInUser } = useLoggedInUser();
 
-  const observer = useRef();
+  const observer = useRef(null);
+  const requestInProgress = useRef(false);
 
 
 
-  // const fetchPost = async (pageNumber = 1, reset = false) => {
+  const fetchPost = useCallback(
+    async (pageNumber = 1, reset = false) => {
+      if (requestInProgress.current) return;
 
-  //   if (!loggedInUser?._id || loading) return;
+      requestInProgress.current = true;
+      setLoading(true);
 
-  //   try {
-
-  //     setLoading(true);
-
-  //     const res = await fetch(
-  //       `${process.env.REACT_APP_BASE_URL}/post/get-all-posts?page=${pageNumber}&limit=${LIMIT}`,
-  //       {
-  //         method: "POST",
-  //         headers: {
-  //           "Content-Type": "application/json",
-  //         },
-  //         body: JSON.stringify({
-  //           userId: loggedInUser?._id,
-  //         }),
-  //       }
-  //     );
-
-  //     const data = await res.json();
-
-  //     if (reset) {
-
-  //       setPosts(data);
-
-  //     } else {
-
-  //       setPosts((prev) => [...prev, ...data]);
-
-  //     }
-
-  //     // CHECK MORE POSTS
-
-  //     if (data.length < LIMIT) {
-
-  //       setHasMore(false);
-
-  //     }
-
-  //   } catch (error) {
-
-  //     console.log(error);
-
-  //   } finally {
-
-  //     setLoading(false);
-
-  //   }
-
-  // };
-
-  // ================= FIRST LOAD =================
-
-
-const fetchPost = async (pageNumber = 1, reset = false) => {
-
-  if (loading) return;
-
-  try {
-
-    setLoading(true);
-
-    const res = await fetch(
-      `${process.env.REACT_APP_BASE_URL}/post/get-all-posts?page=${pageNumber}&limit=${LIMIT}`,
-      {
-        method: "POST",
-        headers: {
+      try {
+        const headers = {
           "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          userId: loggedInUser?._id || null,
-        }),
-      }
-    );
+        };
 
-    const data = await res.json();
-
-    if (reset) {
-
-      setPosts(data);
-
-    } else {
-
-      setPosts((prev) => [...prev, ...data]);
-
-    }
-
-    if (data.length < LIMIT) {
-
-      setHasMore(false);
-
-    }
-
-  } catch (error) {
-
-    console.log(error);
-
-  } finally {
-
-    setLoading(false);
-
-  }
-};
-
-
-
-
-  // useEffect(() => {
-
-  //   if (!loggedInUser?._id) return;
-
-  //   setPosts([]);
-
-  //   setPage(1);
-
-  //   setHasMore(true);
-
-  //   fetchPost(1, true);
-
-  // }, [loggedInUser]);
-
-
-
-//   useEffect(() => {
-
-//   setPosts([]);
-
-//   setPage(1);
-
-//   setHasMore(true);
-
-//   fetchPost(1, true);
-
-// }, [loggedInUser]);
-
-
-
-
-useEffect(() => {
-
-  fetchPost(1, true);
-
-}, []);
-
-  // ================= LOAD MORE =================
-
-  useEffect(() => {
-
-    if (page === 1) return;
-
-    fetchPost(page);
-
-  }, [page]);
-
-  // ================= OBSERVER =================
-
-  const lastPostRef = useCallback(
-
-    (node) => {
-
-      if (loading) return;
-
-      if (observer.current) observer.current.disconnect();
-
-      observer.current = new IntersectionObserver((entries) => {
-
-        if (entries[0].isIntersecting && hasMore) {
-
-          setPage((prev) => prev + 1);
-
+      
+        if (token) {
+          headers.Authorization = "Bearer " + localStorage.getItem("token");
         }
 
-      });
+        const response = await fetch(
+          `${API_URL}/post/get-all-posts?page=${pageNumber}&limit=${LIMIT}`,
+          {
+            method: "POST",
+            headers,
+            body: JSON.stringify({}),
+          }
+        );
 
-      if (node) observer.current.observe(node);
+        const data = await response.json();
 
+        if (!response.ok) {
+          throw new Error(
+            data.message || "Failed to fetch posts"
+          );
+        }
+
+        const fetchedPosts = Array.isArray(data)
+          ? data
+          : Array.isArray(data.posts)
+          ? data.posts
+          : null;
+
+        if (!fetchedPosts) {
+          throw new Error("Invalid posts response");
+        }
+
+        setPosts((previousPosts) => {
+          if (reset) return fetchedPosts;
+
+          const existingIds = new Set(
+            previousPosts.map((post) => post._id)
+          );
+
+          return [
+            ...previousPosts,
+            ...fetchedPosts.filter(
+              (post) => !existingIds.has(post._id)
+            ),
+          ];
+        });
+
+        setHasMore(fetchedPosts.length === LIMIT);
+
+      } catch (error) {
+        console.error("Fetch posts error:", error);
+        toast.error(error.message || "Unable to load posts");
+      } finally {
+        requestInProgress.current = false;
+        setLoading(false);
+      }
     },
-
-    [loading, hasMore]
+    [token]
   );
 
-  // ================= DELETE =================
 
-  const handleDelete = async (id) => {
+  useEffect(() => {
+    setPosts([]);
+    setPage(1);
+    setHasMore(true);
 
-    if (!loggedInUser) {
+    fetchPost(1, true);
 
-      Navigate("/login");
+    return () => {
+      if (observer.current) {
+        observer.current.disconnect();
+      }
+    };
+  }, [fetchPost]);
 
-      return;
-   }
 
-    try {
 
-      const confirmDelete = window.confirm("Delete this post?");
+  useEffect(() => {
+    if (page > 1) {
+      fetchPost(page, false);
+    }
+  }, [page, fetchPost]);
 
-      if (!confirmDelete) return;
+ 
 
-      const res = await fetch(
-        `${process.env.REACT_APP_BASE_URL}/post/delete-post/${id}`,
+  const lastPostRef = useCallback(
+    (node) => {
+      if (observer.current) {
+        observer.current.disconnect();
+      }
+
+      if (!node || loading || !hasMore) return;
+
+      observer.current = new IntersectionObserver(
+        (entries) => {
+          if (
+            entries[0].isIntersecting &&
+            !requestInProgress.current &&
+            hasMore
+          ) {
+            setPage((previousPage) => previousPage + 1);
+          }
+        },
         {
-          method: "DELETE",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            email: loggedInUser?.email,
-          }),
+          threshold: 0.5,
         }
       );
 
-      const data = await res.json();
+      observer.current.observe(node);
+    },
+    [loading, hasMore]
+  );
 
-      if (res.status === 200) {
 
-        setPosts((prev) =>
-          prev.filter((post) => post._id !== id)
-        );
 
-      } else {
+  const refreshPosts = async () => {
+    setPage(1);
+    setHasMore(true);
 
-        alert(data.message || "Failed to delete post");
-
-      }
-
-    } catch (error) {
-
-      console.error("Delete error:", error);
-
-    }
-
+    await fetchPost(1, true);
   };
 
-  // ================= UPDATE =================
+ 
 
-  const handleUpdate = async (updatedPost) => {
+  const handleDelete = async (id) => {
+    if (!token || !loggedInUser) {
+      toast.info("Please login to continue");
+      navigate("/login");
+      return;
+    }
+
+    const confirmDelete = window.confirm(
+      "Are you sure you want to delete this post?"
+    );
+
+    if (!confirmDelete) return;
 
     try {
+      const response = await fetch(
+        `${API_URL}/post/delete-post/${id}`,
+        {
+          method: "DELETE",
+          headers: {
+            Authorization: "Bearer " + localStorage.getItem("token"),
+            "Content-Type": "application/json",
+          },
+        }
+      );
 
-      const res = await fetch(
-        `${process.env.REACT_APP_BASE_URL}/post/edit-post/${updatedPost._id}`,
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(
+          data.message || "Failed to delete post"
+        );
+      }
+
+      setPosts((previousPosts) =>
+        previousPosts.filter(
+          (post) => post._id !== id
+        )
+      );
+
+      toast.success(
+        data.message || "Post deleted successfully"
+      );
+
+    } catch (error) {
+      console.error("Delete error:", error);
+      toast.error(error.message || "Failed to delete post");
+    }
+  };
+
+ 
+
+  const handleUpdate = async (updatedPost) => {
+    if (!token || !loggedInUser) {
+      toast.info("Please login to continue");
+      navigate("/login");
+      return;
+    }
+
+    try {
+      const response = await fetch(
+        `${API_URL}/post/edit-post/${updatedPost._id}`,
         {
           method: "PATCH",
           headers: {
             "Content-Type": "application/json",
+            Authorization: "Bearer " + localStorage.getItem("token"),
           },
           body: JSON.stringify({
-            email: loggedInUser?.email,
             postBody: updatedPost.postBody,
             postImage: updatedPost.postImage,
           }),
         }
       );
 
-      const data = await res.json();
+      const data = await response.json();
 
-      if (res.ok) {
+      if (!response.ok) {
+        throw new Error(
+          data.message || "Failed to update post"
+        );
+      }
 
-        setPosts((prev) =>
-          prev.map((post) =>
+      const savedPost = data.post || data.updatedPost;
+
+      if (savedPost) {
+        setPosts((previousPosts) =>
+          previousPosts.map((post) =>
             post._id === updatedPost._id
-              ? data.post
+              ? savedPost
               : post
           )
         );
-
       } else {
-
-        alert(data.message);
-
+        await refreshPosts();
       }
 
+      toast.success(
+        data.message || "Post updated successfully"
+      );
+
     } catch (error) {
-
       console.error("Update error:", error);
-
+      toast.error(error.message || "Failed to update post");
+      throw error;
     }
-
   };
 
-  return (
 
+  return (
     <div className="feed">
 
       <div className="feed__header"></div>
 
-      <TweetBox fetchPost={() => fetchPost(1, true)} />
+
+      <TweetBox fetchPost={refreshPosts} />
 
       <div className="post-container">
 
-        {posts.map((p, index) => {
-
-          // LAST POST
-
-          if (posts.length === index + 1) {
-
-            return (
-
-              <div ref={lastPostRef} key={p._id}>
-
-                <Post
-                  p={p}
-                  onDelete={handleDelete}
-                  onUpdate={handleUpdate}
-                  
-                />
-
-              </div>
-
-            );
-
-          }
+        {posts.map((post, index) => {
+          const isLastPost = index === posts.length - 1;
 
           return (
-
-            <Post
-              key={p._id}
-              p={p}
-              onDelete={handleDelete}
-              onUpdate={handleUpdate}
-            />
-
+            <div
+              ref={isLastPost ? lastPostRef : null}
+              key={post._id}
+            >
+              <Post
+                p={post}
+                onDelete={handleDelete}
+                onUpdate={handleUpdate}
+              />
+            </div>
           );
-
         })}
 
       </div>
 
-    
-    {loading && (
 
-      <div className="feed-loader">
+      {loading && (
+        <div className="feed-loader">
+          <div className="blue-loader"></div>
+        </div>
+      )}
 
-        <div className="blue-loader"></div>
+     
 
-      </div>
+      {!loading && posts.length === 0 && (
+        <p className="feed-empty">
+          No posts to show yet.
+        </p>
+      )}
 
-    )}
+
+      {!loading && posts.length > 0 && !hasMore && (
+        <p className="feed-empty">
+          You're all caught up.
+        </p>
+      )}
 
     </div>
-
   );
-
 };
 
 export default Feed;

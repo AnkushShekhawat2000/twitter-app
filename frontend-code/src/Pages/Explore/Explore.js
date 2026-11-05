@@ -1,7 +1,8 @@
 
 
 import React, { useEffect, useState } from "react";
-import useLoggedInUser from "../../hooks/useLoggedInUser";
+import { useLoggedInUser } from "../../context/LoggedInUserContex";
+import { authFetch } from "../../utils/authfetch";
 
 import "./Explore.css";
 
@@ -16,7 +17,7 @@ const Explore = () => {
 
   const [search, setSearch] = useState("");
 
-  // const [loggedInUser] = useLoggedInUser();
+  
 
     const { loggedInUser } = useLoggedInUser();
 
@@ -26,22 +27,26 @@ const Explore = () => {
 
     try {
 
-      const res = await fetch(
-        `${process.env.REACT_APP_BASE_URL}/post/explore-posts`,
+      const res = await authFetch(
+        "/post/explore-posts",
         {
           method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            userId: loggedInUser?._id,
-          }),
+          body: JSON.stringify({}),
         }
       );
 
       const result = await res.json();
+      let trendingPosts = result.trendingPosts || [];
+      try {
+        const trendingResponse = await fetch(`${process.env.REACT_APP_BASE_URL}/discover/trending-posts`);
+        const trendingData = await trendingResponse.json();
+        if (Array.isArray(trendingData.posts) && trendingData.posts.length) {
+          trendingPosts = trendingData.posts;
+        }
+      } catch (error) {
+        console.log("Trending API fallback:", error);
+      }
 
-      // REMOVE SELF + ALREADY FOLLOWING USERS
 
       const suggestedUsers = (result.users || []).filter(
 
@@ -54,7 +59,7 @@ const Explore = () => {
 
       setData({
         latestPosts: result.latestPosts || [],
-        trendingPosts: result.trendingPosts || [],
+        trendingPosts,
         imagePosts: result.imagePosts || [],
         users: suggestedUsers,
       });
@@ -77,11 +82,10 @@ const Explore = () => {
 
   }, [loggedInUser]);
 
-  // ================= SEARCH =================
+  
 
   const searchText = search.trim().toLowerCase();
 
-  // POSTS FILTER
 
   const filteredPosts = data.latestPosts.filter((post) => {
 
@@ -97,7 +101,6 @@ const Explore = () => {
 
   });
 
-  // TRENDING FILTER
 
   const filteredTrending = data.trendingPosts.filter((post) => {
 
@@ -113,7 +116,6 @@ const Explore = () => {
 
   });
 
-  // USERS FILTER
 
   const filteredUsers = data.users.filter((user) => {
 
@@ -150,32 +152,16 @@ const Explore = () => {
 
     try {
 
-      const url = user.isFollowing
-
-        ? `${process.env.REACT_APP_BASE_URL}/follow/unfollow-user`
-
-        : `${process.env.REACT_APP_BASE_URL}/follow/follow-user`;
-
-      const res = await fetch(url, {
-
+      const res = await authFetch(user.isFollowing ? "/follow/unfollow-user" : "/follow/follow-user", {
         method: "POST",
-
-        headers: {
-          "Content-Type": "application/json",
-        },
-
         body: JSON.stringify({
-
-          followerUserId: loggedInUser?._id,
           followingUserId: user._id,
-
         }),
-
       });
 
       if (res.ok) {
 
-        // REMOVE USER FROM SUGGESTION AFTER FOLLOW
+        
 
         setData((prev) => ({
 
@@ -201,7 +187,6 @@ const Explore = () => {
 
     <div className="explore">
 
-      {/* HEADER */}
 
       <div className="explore-header">
 
@@ -222,7 +207,6 @@ const Explore = () => {
 
       </div>
 
-      {/* TRENDING */}
 
       {filteredTrending.length > 0 && (
 
@@ -262,7 +246,6 @@ const Explore = () => {
 
       )}
 
-      {/* USERS */}
 
       {filteredUsers.length > 0 && (
 
@@ -309,7 +292,6 @@ const Explore = () => {
 
       )}
 
-      {/* POSTS */}
 
       <div className="explore-section">
 
@@ -386,7 +368,6 @@ const Explore = () => {
 
       </div>
 
-      {/* IMAGE GRID */}
 
       {filteredImages.length > 0 && (
 

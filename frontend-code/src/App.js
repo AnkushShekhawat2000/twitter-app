@@ -19,6 +19,9 @@ import { UserauthcontextProvider } from "./context/UserAuthContext.js";
 import SocialDashboard from "./Pages/Community/Community.js";
 import { LoggedInUserProvider } from "./context/LoggedInUserContex.js";
 
+import { ToastContainer } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
+
 function App() {
   return (
     <div className="App">
@@ -44,6 +47,14 @@ function App() {
             <Route path="/login" element={<Login/>}/>
             <Route path="/signup" element={<Signup/>}/> 
           </Routes>
+            <ToastContainer
+        position="top-right"
+        autoClose={2500}
+        newestOnTop
+        closeOnClick
+        pauseOnHover
+        theme="colored"
+      />
       </BrowserRouter>
       </LoggedInUserProvider>
       </UserauthcontextProvider>  

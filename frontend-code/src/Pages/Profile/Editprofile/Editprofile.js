@@ -6,6 +6,7 @@ import { IconButton } from "@mui/material";
 import TextField from "@mui/material/TextField";
 import ChevronRightIcon from "@mui/icons-material/ChevronRight";
 import "./Editprofile.css";
+import { authFetch } from "../../../utils/authfetch";
 
 const style = {
   position: "absolute",
@@ -80,11 +81,8 @@ const Editprofile = ({ user, loggedInUser: loggedinuser, setProfileUser }) => {
       website,
       dob,
     };
-    fetch(`${process.env.REACT_APP_BASE_URL}/user/userupdate/${user?.email}`, {
+    authFetch(`/user/userupdate/${user?.email}`, {
       method: "PATCH",
-      headers: {
-        "content-type": "application/json",
-      },
       body: JSON.stringify(editinfo),
     })
       .then((res) => res.json())

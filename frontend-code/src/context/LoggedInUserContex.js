@@ -1,52 +1,104 @@
-import { createContext, useContext, useEffect, useState } from "react";
-import { useUserauth } from "./UserAuthContext";
+import {
+  createContext,
+  useContext,
+  useEffect,
+  useCallback,
+  useState,
+} from "react";
 
-const LoggedInUserContext = createContext();
+import { useUserauth } from "./UserAuthContext";
+import { authFetch } from "../utils/authfetch.js";
+
+const LoggedInUserContext = createContext(null);
 
 export const LoggedInUserProvider = ({ children }) => {
+  const { token, user: authUser } = useUserauth();
 
-  const { user } = useUserauth();
-
-//   console.log("user--->",user);
   const [loggedInUser, setLoggedInUser] = useState(null);
-  
-//   console.log("loggedInUser--->",loggedInUser);
   const [loading, setLoading] = useState(true);
 
+  const fetchLoggedInUser = useCallback(async () => {
+    if (!token) {
+      setLoggedInUser(null);
+      setLoading(false);
+      return null;
+    }
+
+    setLoading(true);
+
+    try {
+      const response = await authFetch("/auth/loggedInUser");
+
+      if (!response.ok) {
+        throw new Error("Failed to fetch logged-in user.");
+      }
+
+      const data = await response.json();
+      const profile = data.user ?? data;
+
+      setLoggedInUser(profile);
+      return profile;
+    } catch (error) {
+      console.error("Logged-in user error:", error);
+      setLoggedInUser(null);
+      return null;
+    } finally {
+      setLoading(false);
+    }
+  }, [token]);
+
   useEffect(() => {
+    let cancelled = false;
 
-    if (!user?.email) return;
+    const loadUser = async () => {
+      if (!token) {
+        setLoggedInUser(null);
+        setLoading(false);
+        return;
+      }
 
-    const fetchLoggedInUser = async () => {
+      setLoading(true);
 
       try {
+        const response = await authFetch("/auth/loggedInUser");
 
-        const res = await fetch(
-          `${process.env.REACT_APP_BASE_URL}/auth/loggedInUser?email=${user?.email}`
-        );
+        if (!response.ok) {
+          throw new Error("Failed to fetch logged-in user.");
+        }
 
-        const data = await res.json();
+        const data = await response.json();
+        const profile = data.user ?? data;
 
-        setLoggedInUser(data);
-
+        if (!cancelled) {
+          setLoggedInUser(profile);
+        }
       } catch (error) {
-
-        console.log(error);
-
+        if (!cancelled) {
+          console.error("Logged-in user error:", error);
+          setLoggedInUser(null);
+        }
       } finally {
-
-        setLoading(false);
-
+        if (!cancelled) {
+          setLoading(false);
+        }
       }
     };
 
-    fetchLoggedInUser();
+    loadUser();
 
-  }, [user?.email]);
+    return () => {
+      cancelled = true;
+    };
+  }, [token, authUser?._id]);
 
   return (
     <LoggedInUserContext.Provider
-      value={{ loggedInUser, setLoggedInUser, loading }}
+      value={{
+        loggedInUser,
+        setLoggedInUser,
+        loading,
+        fetchLoggedInUser,
+      }}
     >
       {children}
     </LoggedInUserContext.Provider>
@@ -54,5 +106,14 @@ export const LoggedInUserProvider = ({ children }) => {
 };
 
 export const useLoggedInUser = () => {
-  return useContext(LoggedInUserContext);
+  const context = useContext(LoggedInUserContext);
+
+  if (!context) {
+    throw new Error(
+      "useLoggedInUser must be used inside LoggedInUserProvider"
+    );
+  }
+
+  return context;
 };
+

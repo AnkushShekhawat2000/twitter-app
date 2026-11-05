@@ -11,6 +11,7 @@ import Editprofile from "../Editprofile/Editprofile";
 import axios from "axios";
 // import useLoggedinuser from "../../../hooks/useLoggedInUser"
 import { useLoggedInUser } from "../../../context/LoggedInUserContex";
+import { authFetch } from "../../../utils/authfetch";
 
 
 
@@ -36,12 +37,15 @@ const Mainprofile = ({ user }) => {
 
 
   useEffect(() => {
-    fetch(`${process.env.REACT_APP_BASE_URL}/post/userpost?email=${user?.email}`)
+    authFetch("/post/userpost")
       .then((res) => res.json())
       .then((data) => {
-        setpost(data);
+        setpost(Array.isArray(data) ? data : []);
+      })
+      .catch(() => {
+        setpost([]);
       });
-  }, [user.email]);
+  }, []);
 
 
 
@@ -67,11 +71,8 @@ const Mainprofile = ({ user }) => {
         setisloading(false);
 
         if (url) {
-          fetch(`${process.env.REACT_APP_BASE_URL}/user/userupdate/${user?.email}`, {
+          authFetch(`/user/userupdate/${user?.email}`, {
             method: "PATCH",
-            headers: {
-              "content-type": "application/json",
-            },
             body: JSON.stringify(usercoverimage),
           })
             .then((res) => res.json())
@@ -112,11 +113,8 @@ const Mainprofile = ({ user }) => {
         };
         setisloading(false);
         if (url) {
-          fetch(`${process.env.REACT_APP_BASE_URL}/user/userupdate/${user?.email}`, {
+          authFetch(`/user/userupdate/${user?.email}`, {
             method: "PATCH",
-            headers: {
-              "content-type": "application/json",
-            },
             body: JSON.stringify(userprofileimage),
           })
             .then((res) => res.json())

@@ -1,61 +1,123 @@
 import {
-    GoogleAuthProvider,
-    signInWithPopup,
-    signOut,
-    signInWithEmailAndPassword,
-    createUserWithEmailAndPassword,
-    onAuthStateChanged,
- } from "firebase/auth";
+  createContext,
+  useContext,
+  useState,
+} from "react";
+import { signOut } from "firebase/auth";
+import auth from "../firebase.init";
 
-import auth from "../firebase.init"
-import {createContext, useContext, useEffect, useState} from "react";
+const userAuthcontext = createContext(null);
+const API_URL = process.env.REACT_APP_BASE_URL;
 
-const userAuthcontext = createContext();
+export function UserauthcontextProvider({ children }) {
+  const [user, setUser] = useState(() => {
+    try {
+      return JSON.parse(localStorage.getItem("user")) || null;
+    } catch {
+      return null;
+    }
+  });
 
-export function UserauthcontextProvider({children}){
-    const [user, SetUser] = useState([]);
+  const [token, setToken] = useState(
+    () => localStorage.getItem("token") || null
+  );
 
-    
-    function login(email, password){
-        return signInWithEmailAndPassword(auth, email,password);
+  const setAuthSession = ({ token, user }) => {
+    if (!token || !user) {
+      throw new Error("Invalid authentication response.");
     }
 
-    function signin(email, password){
-        return createUserWithEmailAndPassword(auth, email, password);
+    localStorage.setItem("token", token);
+    localStorage.setItem("user", JSON.stringify(user));
+
+    setToken(token);
+    setUser(user);
+  };
+
+  const login = async (email, password) => {
+    const response = await fetch(`${API_URL}/auth/login`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        email: email.trim().toLowerCase(),
+        password,
+      }),
+    });
+
+    const data = await response.json();
+
+    if (!response.ok || !data.success || !data.token) {
+      throw new Error(data.message || "Login failed.");
     }
 
-    function logout(){
-        return signOut(auth)
-        
+    setAuthSession(data);
+    return data;
+  };
+
+  const signin = async (username, name, email, password) => {
+    const response = await fetch(`${API_URL}/auth/register`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        username: username.trim(),
+        name: name.trim(),
+        email: email.trim().toLowerCase(),
+        password,
+      }),
+    });
+
+    const data = await response.json();
+
+    if (!response.ok || !data.token || !data.user) {
+      throw new Error(data.message || "Registration failed.");
     }
 
+    setAuthSession(data);
+    return data;
+  };
 
-    function googlesignin(){
-        const googleauthprovider = new GoogleAuthProvider();
-        return signInWithPopup(auth, googleauthprovider);
+  const logout = async () => {
+    localStorage.removeItem("token");
+    localStorage.removeItem("user");
+
+    setToken(null);
+    setUser(null);
+
+    try {
+      await signOut(auth);
+    } catch (error) {
+      console.error("Firebase signout error:", error);
     }
+  };
 
-    useEffect(()=> {
-        const Unsubscribe = onAuthStateChanged(auth,(currentuser) => {
-            console.log("Auth", currentuser);
-                SetUser(currentuser);
-        } );
-        return () => {
-            Unsubscribe();
-        }
-    },[]);
-
-    return (
-        <userAuthcontext.Provider value={{user, login, signin, logout, googlesignin}}>
-            {children}
-        </userAuthcontext.Provider>
-    )
-
-
+  return (
+    <userAuthcontext.Provider
+      value={{
+        user,
+        token,
+        login,
+        signin,
+        logout,
+        setAuthSession,
+      }}
+    >
+      {children}
+    </userAuthcontext.Provider>
+  );
 }
 
+export function useUserauth() {
+  const context = useContext(userAuthcontext);
 
-export  function useUserauth(){
-    return useContext(userAuthcontext);
+  if (!context) {
+    throw new Error(
+      "useUserauth must be used inside UserauthcontextProvider"
+    );
+  }
+
+  return context;
 }
-

@@ -1,5 +1,5 @@
 
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import "./sidebar.css";
 
 import SidebarOptions from "./SidebarOption";
@@ -33,16 +33,52 @@ import {
 
 import { useNavigate } from "react-router-dom";
 import { useLoggedInUser } from "../../context/LoggedInUserContex";
-// import useLoggedInUser from "../../hooks/useLoggedInUser";
+import { authFetch } from "../../utils/authfetch";
+import { io } from "socket.io-client";
+
 
 const Sidebar = ({ handleLogout, user }) => {
   const [anchorEl, setAnchorEl] = useState(null);
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [unreadNotifications, setUnreadNotifications] = useState(0);
 
   const openMenu = Boolean(anchorEl);
 
-  // const [loggedInUser] = useLoggedInUser();
+  
   const { loggedInUser } = useLoggedInUser();
+
+  useEffect(() => {
+    if (!loggedInUser?._id) return undefined;
+
+    let socket;
+    const loadUnreadCount = async () => {
+      try {
+        const response = await authFetch(`/user/notifications/${loggedInUser._id}`);
+        const data = await response.json();
+        setUnreadNotifications(Number(data.unreadCount || 0));
+      } catch (error) {
+        setUnreadNotifications(0);
+      }
+    };
+
+    loadUnreadCount();
+    const intervalId = window.setInterval(loadUnreadCount, 30000);
+    const clearUnreadCount = () => setUnreadNotifications(0);
+    window.addEventListener("notifications:read-all", clearUnreadCount);
+    const token = localStorage.getItem("token");
+    if (token) {
+      socket = io(process.env.REACT_APP_BASE_URL, { auth: { token } });
+      socket.on("notification:new", () => {
+        setUnreadNotifications((count) => count + 1);
+      });
+    }
+
+    return () => {
+      window.clearInterval(intervalId);
+      window.removeEventListener("notifications:read-all", clearUnreadCount);
+      if (socket) socket.disconnect();
+    };
+  }, [loggedInUser?._id]);
 
   const navigate = useNavigate();
 
@@ -86,6 +122,7 @@ const Sidebar = ({ handleLogout, user }) => {
         <SidebarOptions
           Icon={NotificationsIcon}
           text="Notifications"
+          badge={unreadNotifications}
           onClick={isMobile ? toggleDrawer : undefined}
         />
       </CustomeLink>

@@ -5,32 +5,24 @@ import { Avatar, IconButton, Tooltip } from "@mui/material";
 import VerifiedUserIcon from "@mui/icons-material/VerifiedUser";
 import BookmarkIcon from "@mui/icons-material/Bookmark";
 
-// import useLoggedInUser from "../../hooks/useLoggedInUser";
-
-
 import "./Bookmarks.css";
 import { useLoggedInUser } from "../../context/LoggedInUserContex";
+import { authFetch } from "../../utils/authfetch";
 
 const Bookmarks = () => {
   const [bookmarks, setBookmarks] = useState([]);
   const [search, setSearch] = useState("");
 
-  // const [loggedInUser] = useLoggedInUser();
     const { loggedInUser } = useLoggedInUser();
 
 
   const getBookmarks = async () => {
     try {
-      const res = await fetch(
-        `${process.env.REACT_APP_BASE_URL}/post/get-bookmarked-posts`,
+      const res = await authFetch(
+        "/post/get-bookmarked-posts",
         {
           method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            userId: loggedInUser?._id,
-          }),
+          body: JSON.stringify({}),
         },
       );
 
@@ -48,21 +40,14 @@ const Bookmarks = () => {
     }
   }, [loggedInUser]);
 
-  // ================= REMOVE BOOKMARK =================
 
   const handleUnbookmark = async (postId) => {
     try {
-      const res = await fetch(
-        `${process.env.REACT_APP_BASE_URL}/post/unbookmark`,
+      const res = await authFetch(
+        "/post/unbookmark",
         {
           method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            postId,
-            userId: loggedInUser?._id,
-          }),
+          body: JSON.stringify({ postId }),
         },
       );
 
@@ -76,7 +61,6 @@ const Bookmarks = () => {
     }
   };
 
-  // ================= SEARCH =================
 
   const filteredBookmarks = (bookmarks || []).filter(
     (post) =>
@@ -87,7 +71,6 @@ const Bookmarks = () => {
 
   return (
     <div className="bookmark-container">
-      {/* HEADER */}
 
       <div className="bookmark-header-main">
         <div>
@@ -103,7 +86,6 @@ const Bookmarks = () => {
         />
       </div>
 
-      {/* EMPTY */}
 
       {filteredBookmarks.length === 0 ? (
         <div className="bookmark-empty">
@@ -120,7 +102,6 @@ const Bookmarks = () => {
         <div className="bookmark-list">
           {filteredBookmarks.map((post) => (
             <div className="bookmark-card" key={post._id}>
-              {/* TOP */}
 
               <div className="bookmark-top">
                 <div className="bookmark-user">
@@ -137,7 +118,6 @@ const Bookmarks = () => {
                   </div>
                 </div>
 
-                {/* UNBOOKMARK */}
 
                 <Tooltip title="Remove Bookmark">
                   <IconButton
@@ -148,13 +128,11 @@ const Bookmarks = () => {
                 </Tooltip>
               </div>
 
-              {/* TEXT */}
 
               <div className="bookmark-content">
                 <p>{post.postBody}</p>
               </div>
 
-              {/* IMAGE */}
 
               {post.postImage && (
                 <img

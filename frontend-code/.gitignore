@@ -2,6 +2,8 @@
 
 # dependencies
 /node_modules
+# Google Cloud Credentials
+controllers/credentials/serviceAccountKey.json
 /.pnp
 .pnp.js
 

@@ -9,6 +9,8 @@
   display: flex;
   border-radius: 5px;
   border-left: 1px solid #ddd;
+  margin-bottom: 12px;
+  box-sizing: border-box;
 }
 
 .avtar-icons{
@@ -40,8 +42,11 @@
 .post__footer {
   display: flex;
   justify-content: space-between;
+  align-items: center;
+  width: 100%;
   padding: 0 10px;
   margin-top: 10px;
+  box-sizing: border-box;
 }
 
 .post__footer__icon:hover {
@@ -53,14 +58,14 @@
   display: flex;
   flex-direction: row;
   gap: 8px;
- 
   align-items: center;
-  
+  min-width: 0;
 }
 
 .post__headerText > h3 {
   font-size: 15px;
-  margin-bottom: 15px;
+  margin: 0;
+  line-height: 1.25;
 }
 
 .post__headerSpecial {
@@ -69,6 +74,14 @@
   font-weight: 600;
   font-size: 12px;
   color: gray;
+}
+
+.post__age {
+  margin-left: 4px;
+  color: #536471;
+  font-size: 13px;
+  font-weight: 400;
+  white-space: nowrap;
 }
 
 .post__headerDescription {
@@ -151,4 +164,211 @@
 
 .bookmarked {
   color: rgb(80, 183, 245);
+}
+
+.retweeted {
+  color: #00ba7c;
+}
+
+.post-retweet-label {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  margin: 0 0 8px 42px;
+  color: #536471;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.post-retweet-label svg {
+  color: #00ba7c;
+}
+
+.post-comments {
+  width: 100%;
+  box-sizing: border-box;
+  margin-top: 12px;
+  border-top: 1px solid #eff3f4;
+  padding-top: 12px;
+}
+
+.post-comment-list {
+  max-height: 520px;
+  overflow-y: auto;
+  padding-right: 4px;
+}
+
+.post-comment {
+  position: relative;
+  margin-left: calc(var(--comment-depth, 0) * 18px);
+  padding: 10px 0;
+}
+
+.post-comment-main {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+}
+
+.post-comment-reply::before {
+  content: "";
+  position: absolute;
+  left: -9px;
+  top: 0;
+  bottom: 0;
+  width: 2px;
+  border-radius: 2px;
+  background: #dce7ef;
+}
+
+.post-comment-avatar {
+  width: 34px;
+  height: 34px;
+  flex: 0 0 34px;
+  border-radius: 50%;
+  overflow: hidden;
+  display: grid;
+  place-items: center;
+  background: linear-gradient(135deg, #1da1f2, #78c7f5);
+  color: white;
+  font-weight: 700;
+}
+
+.post-comment-avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.post-comment-content {
+  min-width: 0;
+  flex: 1;
+  border-radius: 14px;
+  background: #f7f9f9;
+  padding: 9px 12px;
+}
+
+.post-comment-header {
+  display: flex;
+  align-items: baseline;
+  gap: 5px;
+  flex-wrap: wrap;
+}
+
+.post-comment-header strong {
+  font-size: 13px;
+}
+
+.post-comment-header span {
+  font-size: 12px;
+  color: #657786;
+}
+
+.post-comment-content p {
+  margin: 5px 0;
+  font-size: 14px;
+  line-height: 1.4;
+  overflow-wrap: anywhere;
+}
+
+.post-comment-actions {
+  display: flex;
+  gap: 12px;
+}
+
+.post-comment-actions button {
+  border: 0;
+  background: transparent;
+  padding: 2px 0;
+  font-size: 12px;
+  font-weight: 600;
+  color: #657786;
+  cursor: pointer;
+}
+
+.post-comment-actions button:hover,
+.post-comment-edit-button:hover {
+  color: var(--twitter-color);
+}
+
+.post-comment-actions .post-comment-delete-button:hover {
+  color: #f4212e;
+}
+
+.post-comment-edit textarea {
+  width: 100%;
+  box-sizing: border-box;
+  resize: vertical;
+  min-height: 70px;
+  border: 1px solid #cfd9de;
+  border-radius: 10px;
+  padding: 8px;
+  font-family: inherit;
+  outline: none;
+}
+
+.post-comment-edit textarea:focus {
+  border-color: var(--twitter-color);
+  box-shadow: 0 0 0 2px #e8f5fe;
+}
+
+.post-comment-edit > div {
+  display: flex;
+  justify-content: flex-end;
+  gap: 7px;
+  margin-top: 7px;
+}
+
+.post-comment-edit button,
+.post-comment-form button,
+.post-comment-cancel-reply {
+  border: 0;
+  border-radius: 999px;
+  padding: 7px 14px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.post-comment-edit-cancel {
+  background: #eef1f2;
+  color: #536471;
+}
+
+.post-comment-save,
+.post-comment-form button:last-child {
+  background: var(--twitter-color);
+  color: white;
+}
+
+.post-comment-form {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  border-top: 1px solid #eff3f4;
+  margin-top: 10px;
+  padding-top: 12px;
+  align-items: baseline;
+}
+
+.post-comment-form input {
+  min-width: 0;
+  flex: 1;
+  border: 1px solid #dce5ea;
+  border-radius: 999px;
+  background: #f7f9f9;
+  padding: 10px 14px;
+  outline: none;
+}
+
+.post-comment-form input:focus {
+  border-color: var(--twitter-color);
+  background: white;
+  box-shadow: 0 0 0 2px #e8f5fe;
+}
+
+.post-comment-cancel-reply {
+  flex: 0 0 auto;
+  background: transparent;
+  color: #536471;
+  padding-left: 5px;
 }

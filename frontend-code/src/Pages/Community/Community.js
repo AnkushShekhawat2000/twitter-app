@@ -4,63 +4,60 @@ import React, { useEffect, useState } from "react";
 import UserCard from "./UserCard";
 import "./social.css";
 import { useLoggedInUser } from "../../context/LoggedInUserContex";
-// import useLoggedInUser from "../../hooks/useLoggedInUser";
+import { authFetch } from "../../utils/authfetch";
+
 
 const SocialDashboard = () => {
   const [tab, setTab] = useState("followers");
   const [users, setUsers] = useState([]);
   const [search, setSearch] = useState("");
 
-  // const [loggedInUser] = useLoggedInUser();
 
     const { loggedInUser } = useLoggedInUser();
-  const userId = loggedInUser?._id;
-  const userEmail = loggedInUser?.email;
+    const userId = loggedInUser?._id;
 
 
   const getFollowers = async () => {
-    const res = await fetch(`${process.env.REACT_APP_BASE_URL}/follow/get-followers`, {
+    const res = await authFetch("/follow/get-followers", {
       method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({ userId }),
+      body: JSON.stringify({}),
     });
 
     const data = await res.json();
 
-    const formatted = data.followers.map((f) => ({
-      id: f.followerUserId._id,
-      name: f.followerUserId.name,
-      username: f.followerUserId.username,
-      avatar: f.followerUserId.profilePhoto,
+    const formatted = data && Array.isArray(data.followers) ? data.followers.map((f) => ({
+      id: f.followerUserId?._id,
+      name: f.followerUserId?.name,
+      username: f.followerUserId?.username,
+      avatar: f.followerUserId?.profilePhoto,
       bio: "No bio available",
-      isFollowing: false,
-    }));
+      isFollowing: f.isFollowing,
+      followersCount: f.followerUserId?.followersCount || 0,
+      followingCount: f.followerUserId?.followingCount || 0,
+      mutualFriends: f.mutualFriends || 0,
+    })) : [];
 
     setUsers(formatted);
   };
 
   // 🔹 FETCH FOLLOWING
   const getFollowing = async () => {
-    const res = await fetch(`${process.env.REACT_APP_BASE_URL}/follow/get-followings`, {
+    const res = await authFetch("/follow/get-followings", {
       method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({ userId }),
+      body: JSON.stringify({}),
     });
 
     const data = await res.json();
 
-    const formatted = data.following.map((f) => ({
-      id: f.followingUserId._id,
-      name: f.followingUserId.name,
-      username: f.followingUserId.username,
-      avatar: f.followingUserId.profilePhoto,
+    const formatted = data && Array.isArray(data.following) ? data.following.map((f) => ({
+      id: f.followingUserId?._id,
+      name: f.followingUserId?.name,
+      username: f.followingUserId?.username,
+      avatar: f.followingUserId?.profilePhoto,
       bio: "No bio available",
       isFollowing: true,
-    }));
+      mutualFriends: f.mutualFriends || 0,
+    })) : [];
 
     setUsers(formatted);
   };
@@ -78,14 +75,10 @@ const SocialDashboard = () => {
       ? `${process.env.REACT_APP_BASE_URL}/follow/unfollow-user`
       : `${process.env.REACT_APP_BASE_URL}/follow/follow-user`;
 
-    const res = await fetch(url, {
+    const res = await authFetch(url.replace(process.env.REACT_APP_BASE_URL, ""), {
       method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
       body: JSON.stringify({
-        followerUserEmail: userEmail,
-        followingUserEmail: user.username + "@gmail.com", 
+        followingUserId: user.id,
       }),
     });
 
@@ -99,10 +92,10 @@ const SocialDashboard = () => {
   };
 
   
-  const filtered = users.filter(
+  const filtered = users &&  users.filter(
     (u) =>
-      u.name.toLowerCase().includes(search.toLowerCase()) ||
-      u.username.toLowerCase().includes(search.toLowerCase()),
+      u?.name?.toLowerCase()?.includes(search.toLowerCase()) ||
+      u?.username?.toLowerCase()?.includes(search.toLowerCase()),
   );
 
   return (
@@ -111,7 +104,6 @@ const SocialDashboard = () => {
       <div className="social-header">
         <div>
           <h2>Social Network</h2>
-          {/* <p>Manage your connections and discover new people.</p> */}
         </div>
 
         <div className="flex-head">
