@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
 import { toast } from "react-toastify";
+import { useNavigate } from "react-router-dom";
 
 import { Avatar, IconButton, Tooltip } from "@mui/material";
 
@@ -25,8 +25,9 @@ const API_URL = process.env.REACT_APP_BASE_URL;
 const IMGBB_API_KEY = process.env.IMGBB_KEY
 
 const Post = ({ p, onDelete, onUpdate }) => {
+  
   const token = localStorage.getItem("token");
- 
+ const navigate = useNavigate();
   const loggedInUser = JSON.parse(
     localStorage.getItem("user") || "null"
   );
@@ -144,6 +145,7 @@ const Post = ({ p, onDelete, onUpdate }) => {
 
  
   const submitComment = async () => {
+     if (!checkAuthentication()) return;
     const body = commentBody.trim();
 
     if (!body) return;
@@ -181,6 +183,7 @@ const Post = ({ p, onDelete, onUpdate }) => {
 
  
   const saveCommentEdit = async () => {
+     if (!checkAuthentication()) return;
     const body = editingCommentBody.trim();
 
     if (!body) return;
@@ -203,6 +206,7 @@ const Post = ({ p, onDelete, onUpdate }) => {
 
 
   const deleteComment = async (commentId) => {
+     if (!checkAuthentication()) return;
     if (!window.confirm("Delete this comment and its replies?")) {
       return;
     }
@@ -339,8 +343,26 @@ const Post = ({ p, onDelete, onUpdate }) => {
     </div>
   );
 
+  
+const checkAuthentication = () => {
+  const token = localStorage.getItem("token");
+
+  if (!token) {
+    toast.warning(
+      "You need to login to perform this action!"
+    );
+
+    navigate("/login");
+    return false;
+  }
+
+  return true;
+};
+
 
   const handleFollow = async () => {
+     if (!checkAuthentication()) return; 
+
     const data = await authenticatedRequest(
       "/follow/follow-user",
       "POST",
@@ -358,6 +380,8 @@ const Post = ({ p, onDelete, onUpdate }) => {
 
 
   const handleUnfollow = async () => {
+   if (!checkAuthentication()) return; 
+
     const data = await authenticatedRequest(
       "/follow/unfollow-user",
       "POST",
@@ -375,6 +399,8 @@ const Post = ({ p, onDelete, onUpdate }) => {
 
 
   const handleLike = async () => {
+   if (!checkAuthentication()) return; 
+
     if (isLiked) return;
 
     const data = await authenticatedRequest(
@@ -392,6 +418,8 @@ const Post = ({ p, onDelete, onUpdate }) => {
   };
 
   const handleUnlike = async () => {
+   if (!checkAuthentication()) return;
+
     if (!isLiked) return;
 
     const data = await authenticatedRequest(
@@ -411,6 +439,8 @@ const Post = ({ p, onDelete, onUpdate }) => {
 
 
   const handleBookmark = async () => {
+   if (!checkAuthentication()) return;
+
     if (isBookmarked) return;
 
     const data = await authenticatedRequest(
@@ -427,6 +457,8 @@ const Post = ({ p, onDelete, onUpdate }) => {
   };
 
   const handleUnbookmark = async () => {
+   if (!checkAuthentication()) return;
+
     if (!isBookmarked) return;
 
     const data = await authenticatedRequest(
@@ -444,6 +476,7 @@ const Post = ({ p, onDelete, onUpdate }) => {
 
 
   const toggleRepost = async () => {
+   if (!checkAuthentication()) return;
     const data = await authenticatedRequest(
       isReposted ? "/post/undo-repost" : "/post/repost",
       "POST",
@@ -464,6 +497,7 @@ const Post = ({ p, onDelete, onUpdate }) => {
 
 
   const handleUpdate = async () => {
+   if (!checkAuthentication()) return;
     try {
       await onUpdate({
         ...p,
@@ -481,6 +515,7 @@ const Post = ({ p, onDelete, onUpdate }) => {
   };
 
   const handleImageChange = async (event) => {
+   if (!checkAuthentication()) return;
     const file = event.target.files?.[0];
 
     if (!file) return;

@@ -40,6 +40,24 @@ const postSchema = new Schema({
       ref: "User"
     }
   ],
+  reposts: [
+    {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "User"
+    }
+  ],
+  repostActivity: [
+    {
+      userId: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "User",
+      },
+      repostedAt: {
+        type: Number,
+        default: Date.now,
+      },
+    }
+  ],
 
   creationDateTime: {
     type: Number,
